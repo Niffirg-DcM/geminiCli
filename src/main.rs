@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use std::io;
+use dotenvy::dotenv;
 
 //incoming payloads with deserialize
 #[derive(Deserialize, Debug)]
@@ -38,11 +39,16 @@ struct out_parts {
 
 #[tokio::main]
 async fn main() -> Result<(),Box<dyn std::error::Error>> {
+    dotenv().expect(".env file not found");
+
+    
+    let key = match env::var("GEMINI_API_KEY") {
+        Ok(val) => println!("key recieved"),
+        Err(e) => eprintln!("Error reading gemini api key"),
+    };
+
     println!("Hello, world!");
     println!("Exit anytime with 'exit'");
-    println!("Enter API Key: ");//take input
-    let mut apiKey = String::new();
-    io::stdin().read_line(&mut apiKey).expect("Failure to read line");
     
     //("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={}",apiKey.trim()))
     let client = reqwest::Client::builder()
@@ -55,12 +61,11 @@ async fn main() -> Result<(),Box<dyn std::error::Error>> {
 
     let post_url = "https://typicode.com";
     let payload = out_candidates {
-        content: [ out_contents {
-            part: [ out_parts{
-                data ["fail"]}
+        content: vec![ out_contents {
+            part: vec![ out_parts {
+                data: vec![String::from("fail")]}
                 ]
-            }
-            ]
+            } ]
     };
 
     let post_response = client.post(post_url)
