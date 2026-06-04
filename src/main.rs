@@ -1,3 +1,4 @@
+use reqwest::Response;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use std::io;
@@ -6,19 +7,24 @@ use dotenvy::dotenv;
 //incoming payloads with deserialize
 #[derive(Deserialize, Debug)]
 struct inCandidates {
-    content: Vec<inContents>,
+    content: inContents,
 }
 
 #[derive(Deserialize, Debug)]
 struct inContents {
-    part: Vec<inParts>,
+    parts: Vec<inParts>,
+    role: String,
 }
 
 #[derive(Deserialize, Debug)]
 struct inParts {
-    data: Vec<String>,
+    text: String,
 }
 
+#[derive(Deserialize, Debug)]
+struct GeminiResponse {
+    candidates: Vec<inCandidates>,
+}
 
 
 //outgoing payloads with serialize
@@ -72,20 +78,24 @@ async fn main() -> Result<(),Box<dyn std::error::Error>> {
     let payload = outCandidates {
         contents: vec![ outContents {
             parts: vec![ outParts {
-                text: String::from("fail")}
+                text: data_to_send}
                 ]
             } ]
     };
 
-    let post_response:inCandidates = client.post(url)
+    let post_response:Response = client.post(url)
         .header("Content-Type", "application/json")
         .json(&payload)
         .send()
         .await?;
 
+
+
     if post_response.status().is_success() {
         println!("POST Success! Resource created.");
-        println!("{}",);
+        let parsed_response: GeminiResponse = post_response.json().await?;
+        println!("Response is: {}",parsed_response.candidates[0].content.parts[0].text);
+        
     } else {
         println!("Error Code: {}",post_response.status().to_string());
     }
